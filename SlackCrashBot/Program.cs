@@ -13,9 +13,6 @@ namespace SlackCrashBot
     class Program
     {
         public string AUTHTOKEN = "xoxb-106585938448-78NFQiiNKP7IN23s1McXlc8V";
-
-
-        Action messageRecived;
         public bool Status;
         public string IP = "localhost";
         Action<LoginResponse> connected;
@@ -78,7 +75,7 @@ namespace SlackCrashBot
         
 
 
-        void Send(string Message,SlackSocketClient client)
+        void SendToLogChat(string Message,SlackSocketClient client)
         {
             connected = null;
             client.Connect(connected =>
@@ -88,15 +85,13 @@ namespace SlackCrashBot
 
             });
         }
-        void MessageToDevs(string Message, SlackSocketClient client)
+
+        void MessageTo(string Message, SlackSocketClient client, DirectMessageConversation userchannelid)
         {
             connected = null;
             client.Connect(connected =>
             {
-
-                var user = client.Users.Find(x => x.name.Equals("")); 
-                var dmchannel = client.DirectMessages.Find(x => x.user.Equals(user.id));
-                client.SendMessage(null, dmchannel.id, "I don't know you yet!");
+                client.SendMessage(null, userchannelid.id, "I don't know you yet!");
 
             });
         }
