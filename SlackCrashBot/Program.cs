@@ -8,47 +8,22 @@ using System.Threading;
 using SlackAPI;
 
 
-namespace SlackCrashBot
+namespace Slack_Crash_Bot
 {
     class Program
     {
-        public string AUTHTOKEN = "xoxb-106585938448-78NFQiiNKP7IN23s1McXlc8V";
-        public bool Status;
-        public string IP = "localhost";
-        Action<LoginResponse> connected;
-
-
-        public SlackSocketClient client;
-
-
         static void Main(string[] args) => new Program().Start(args);
-
-
-
-
-
+        public string AUTHTOKEN = "xoxb-106585938448-78NFQiiNKP7IN23s1McXlc8V";
+       
+        Action<LoginResponse> Connected;
+        public SlackSocketClient client;
+        
         void Start(string[] args)
         {
             client = new SlackSocketClient(AUTHTOKEN);
             // Create seperate thread for the head loop to prevent of Thread.Sleep
             Thread headloop = new Thread(HeadLoop);
             headloop.Start();
-            //Thread CheckStat = new Thread(() => CheckStatus(client));
-            //CheckStat.Start();
-
-            //client.OnMessageReceived += (message) =>
-            //{
-            //    // Handle each message as you receive them
-            //    switch (message.text.ToLower())
-            //    {
-            //        case "":
-
-            //            break;
-            //    }
-            //};
-
-            // If in case something needs to be handled via Direct Message commands.
-
         }
         void HeadLoop()
         {
@@ -58,7 +33,9 @@ namespace SlackCrashBot
                 {
                     switch(Console.ReadLine().ToString().ToLower())
                     {
-                        
+                        case "Send":
+                            SendToLogChat("Hello World!",client);
+                            break;
                         case "stop":
                             Environment.Exit(Environment.ExitCode);
                             break;
@@ -70,14 +47,19 @@ namespace SlackCrashBot
                 {
                     Console.WriteLine(ex);
                 }
+                Thread.Sleep(200);
             }
         }
         
 
-
-        void SendToLogChat(string Message,SlackSocketClient client)
+        /// <summary>
+        /// Sends out a message to the servercrashbot channel.
+        /// </summary>
+        /// <param name="Message">Some string</param>
+        /// <param name="client">SlackSocketClient IE client</param>
+        void SendToLogChat(string Message, SlackSocketClient client)
         {
-            connected = null;
+            Connected = null;
             client.Connect(connected =>
             {
                 var c = client.Channels.Find(x => x.name.Equals("servercrashbot"));
@@ -85,10 +67,15 @@ namespace SlackCrashBot
 
             });
         }
-
+        /// <summary>
+        /// Simplified message to a user
+        /// </summary>
+        /// <param name="Message">String :"Message"</param>
+        /// <param name="client">client</param>
+        /// <param name="userchannelid">userchannelid</param>
         void MessageTo(string Message, SlackSocketClient client, DirectMessageConversation userchannelid)
         {
-            connected = null;
+            Connected = null;
             client.Connect(connected =>
             {
                 client.SendMessage(null, userchannelid.id, Message);
