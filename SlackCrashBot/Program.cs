@@ -91,7 +91,7 @@ namespace SlackCrashBot
             connected = null;
             client.Connect(connected =>
             {
-                client.SendMessage(null, userchannelid.id, "I don't know you yet!");
+                client.SendMessage(null, userchannelid.id, Message);
 
             });
         }
