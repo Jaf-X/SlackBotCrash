@@ -42,37 +42,40 @@ namespace SlackCrashBot
         public SlackSocketClient client;
 
 
-        static void Main(string[] args) => new Program().Start(args);   
+        static void Main(string[] args) => new Program().Start(args);
 
-        
+
+
+
 
         void Start(string[] args)
         {
 
 
-            Thread headloop = new Thread(HeadLoop);
-            Thread checkstat = new Thread(CheckStatus);
-
-            headloop.Start();
-            checkstat.Start();
+            
 
             if (client == null)
             {
                 client = new SlackSocketClient(AUTHTOKEN);
             }
-            
-         
 
+            Thread headloop = new Thread(HeadLoop);
             
+            headloop.Start();
+            Thread CheckStat = new Thread(() => CheckStatus(client));
+            CheckStat.Start();
+
             // If in case something needs to be handled via Direct Message commands.
             client.OnMessageReceived += (message) =>
             {
                 // Handle each message as you receive them
 
 
+
+
             };
         }
-
+          
         void HeadLoop()
         {
             while (true)
@@ -103,19 +106,24 @@ namespace SlackCrashBot
 
         }
 
-        void CheckStatus()
+        void CheckStatus(SlackSocketClient client)
         {
-           
-            if (!IsPingable(IP))
+           while (true) { 
+            if (IsPingable(IP))
             {
                 Status = false;
-            }
+                Send("Server Down @ " + System.DateTime.Now.ToString(),client);
+                    Thread.Sleep(10000);
+                }
             else
             {
+                
                 Status = true;
-                Thread.Sleep(100000);
+                Thread.Sleep(10000);
             }
-            CheckStatus();
+
+            }
+          
         }
 
 
@@ -123,7 +131,7 @@ namespace SlackCrashBot
 
 
 
-        void Send(string Message)
+        void Send(string Message,SlackSocketClient client)
         {
             connected = null;
             client.Connect(connected =>
