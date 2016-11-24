@@ -14,7 +14,7 @@ namespace Slack_Crash_Bot
     {
         
         static void Main(string[] args) => new Program().Start(args);
-        public string AUTHTOKEN; // = "xoxb-106585938448-78NFQiiNKP7IN23s1McXlc8V"
+        public string AUTHTOKEN;
         public string[] userbase;
         Action<LoginResponse> Connected;
         public SlackSocketClient client;
