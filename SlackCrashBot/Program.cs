@@ -12,14 +12,61 @@ namespace Slack_Crash_Bot
 {
     class Program
     {
+        
         static void Main(string[] args) => new Program().Start(args);
-        public string AUTHTOKEN = "xoxb-106585938448-78NFQiiNKP7IN23s1McXlc8V";
-       
+        public string AUTHTOKEN; // = "xoxb-106585938448-78NFQiiNKP7IN23s1McXlc8V"
+        public string[] userbase;
         Action<LoginResponse> Connected;
         public SlackSocketClient client;
-        
+        public string DefaultChannel;
+
+
+        enum MessageType
+        {
+            Crash,
+            Error,
+            Warning,
+            Info
+        }
+
         void Start(string[] args)
         {
+            
+            var MyIni = new IniFile("Settings.ini");
+
+
+
+            if(!MyIni.KeyExists("Token"))
+            {
+                MyIni.Write("Token", "EnterTokenHere");
+                AUTHTOKEN = MyIni.Read("Token");
+            }
+            else 
+            {
+                AUTHTOKEN = MyIni.Read("Token");
+            }
+
+            if (!MyIni.KeyExists("Userbase"))
+            {
+                MyIni.Write("Userbase", "User1,User2,User3");
+                userbase = MyIni.Read("Userbase").Split(',');
+            }
+            else
+            {
+                userbase = MyIni.Read("Userbase").Split(',');
+            }
+            if (!MyIni.KeyExists("DefaultChannel"))
+            {
+                MyIni.Write("DefaultChannel", "general");
+                DefaultChannel = MyIni.Read("DefaultChannel");
+            }
+            else
+            {
+                DefaultChannel = MyIni.Read("DefaultChannel");
+            }
+
+
+
             client = new SlackSocketClient(AUTHTOKEN);
             // Create seperate thread for the head loop to prevent of Thread.Sleep
             Thread headloop = new Thread(HeadLoop);
@@ -33,14 +80,10 @@ namespace Slack_Crash_Bot
                 {
                     switch(Console.ReadLine().ToString().ToLower())
                     {
-                        case "Send":
-                            SendToLogChat("Hello World!",client);
-                            break;
+                      
                         case "stop":
                             Environment.Exit(Environment.ExitCode);
                             break;
-                        //case "":
-                        //    break;
                     }
                 }
                 catch (Exception ex)
@@ -55,15 +98,43 @@ namespace Slack_Crash_Bot
         /// <summary>
         /// Sends out a message to the servercrashbot channel.
         /// </summary>
-        /// <param name="Message">Some string</param>
-        /// <param name="client">SlackSocketClient IE client</param>
-        void SendToLogChat(string Message, SlackSocketClient client)
+        /// <param name="Message"> The message that is going to be sent</param>
+        /// <param name="client"> The SlackSocketClient that is used to connect</param>
+        /// <param name="Channelname">Name of the channel you want to send it to</param>
+        void SendToLogChat(string Message, SlackSocketClient client, MessageType type)
         {
             Connected = null;
-            client.Connect(connected =>
+            client.Connect(Connected =>
             {
-                var c = client.Channels.Find(x => x.name.Equals("servercrashbot"));
-            client.SendMessage(null , c.id, Message);
+                var c = client.Channels.Find(x => x.name.Equals(DefaultChannel));
+                switch (type)
+                {
+                    case MessageType.Crash:
+                        client.SendMessage(null, c.id, "Crash : " + Message);
+                        for (int i = 0; i < userbase.Length; i++)
+                        {
+                            var user = client.Users.Find(x => x.name.Equals(userbase[i])); // everyone is the userbase
+
+                            if (user != null)
+                            { 
+                                var dmchannel = client.DirectMessages.Find(x => x.user.Equals(user.id));
+                                if (user != null && dmchannel != null)
+                                    MessageTo(Message, client, dmchannel, type);
+                            }
+                           
+                        }
+                        break;
+                    case MessageType.Error:
+                        client.SendMessage(null, c.id, "Error : " + Message);
+                        break;
+                    case MessageType.Info:
+                        client.SendMessage(null, c.id, "Info : " + Message);
+                        break;
+                    case MessageType.Warning:
+                        client.SendMessage(null, c.id, "Warning : " + Message);
+                        break;
+                }
+            
 
             });
         }
@@ -73,12 +144,15 @@ namespace Slack_Crash_Bot
         /// <param name="Message">String :"Message"</param>
         /// <param name="client">client</param>
         /// <param name="userchannelid">userchannelid</param>
-        void MessageTo(string Message, SlackSocketClient client, DirectMessageConversation userchannelid)
+        void MessageTo(string Message, SlackSocketClient client, DirectMessageConversation userchannelid, MessageType type)
         {
             Connected = null;
-            client.Connect(connected =>
+            client.Connect(Connected =>
             {
-                client.SendMessage(null, userchannelid.id, Message);
+                if (type != MessageType.Crash)
+                    client.SendMessage(null, userchannelid.id, Message);
+                else
+                    client.SendMessage(null, userchannelid.id, "Crash :" + Message);
 
             });
         }
